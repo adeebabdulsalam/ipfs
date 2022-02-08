@@ -1,7 +1,8 @@
 import React, { Component } from "react";
 import SimpleStorageContract from "./contracts/SimpleStorage.json";
 import getWeb3 from "./getWeb3";
-
+// import "@truffle/contract";
+// var TruffleContract = require("@truffle/contract");
 import ipfs from './ipfs';
 import "./App.css";
 
@@ -22,18 +23,27 @@ class App extends Component {
 
       // Use web3 to get the user's accounts.
       const accounts = await web3.eth.getAccounts();
-
+      // console.log(accounts)
       // Get the contract instance.
-      const networkId = await web3.eth.net.getId();
-      const deployedNetwork = SimpleStorageContract.networks[networkId];
+      // const networkId = await web3.eth.net.getId();
+      // const deployedNetwork = SimpleStorageContract.networks[networkId];
       const instance = new web3.eth.Contract(
         SimpleStorageContract.abi,
-        deployedNetwork && deployedNetwork.address,
+        "0x946AD54E639f5d85F49DC1962e91cFA8eadDD74e",
       );
+        // instance.options.address = "0x946AD54E639f5d85F49DC1962e91cFA8eadDD74e";
 
+      // var storageContract = window.TruffleContract(SimpleStorageContract);
+      // storageContract.setProvider(web3);
+      // storageContract.deployed().then((i)=>{
+      //     console.log(i)
+      //     this.setState({ web3, accounts, contract: i}, this.runExample);
+      // }).catch((err)=>{
+      //   console.log(err)
+      // });
       // Set web3, accounts, and contract to the state, and then proceed with an
       // example of interacting with the contract's methods.
-      this.setState({ web3, accounts, contract: instance }, this.runExample);
+      this.setState({ web3, accounts, contract: instance}, this.runExample);
     } catch (error) {
       // Catch any errors for any of the above operations.
       alert(
@@ -48,6 +58,10 @@ class App extends Component {
     console.log("accounts "+accounts)
     console.log("contracts "+contract)
   //   // Stores a given value, 5 by default.
+    const ipfshash = await contract.methods.get().call()
+    console.log("get hash "+ipfshash)
+    this.setState({ipfsHash: ipfshash});
+    this.render();
   //   await contract.methods.set(5).send({ from: accounts[0] });
 
   //   // Get the value from the contract to prove it worked.
@@ -73,14 +87,18 @@ class App extends Component {
   onSubmit(event) {
     event.preventDefault();
     console.log("on submit..")
+    const {accounts,contract} = this.state;
     ipfs.files.add(this.state.buffer, (err,result)=>{
       if(err){
         console.error(err)
         return
       }
       console.log(result)
-      this.setState({ipfsHash: result[0].hash})
-      console.log("ipfsHash "+this.state.ipfsHash)
+      
+      contract.methods.set(result[0].hash).send({from:accounts[0]}).then(()=>{
+        this.setState({ipfsHash: result[0].hash})
+        console.log("ipfsHash "+this.state.ipfsHash)
+      });
     })
   };
 
